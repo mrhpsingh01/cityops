@@ -1,0 +1,245 @@
+{
+  "model_version": "logreg-2025-jan-v1",
+  "analysis_cutoff_local": "2026-10-10 01:20:33",
+  "source_range": [
+    "2025-01-01",
+    "2025-02-01"
+  ],
+  "splits": {
+    "train": [
+      "2025-01-01",
+      "2025-01-21"
+    ],
+    "validation": [
+      "2025-01-21",
+      "2025-01-27"
+    ],
+    "test": [
+      "2025-01-27",
+      "2025-02-01"
+    ]
+  },
+  "target": "No valid closure recorded within seven NYC-local civil days in latest available source row",
+  "features": [
+    "problem",
+    "problem_detail",
+    "borough",
+    "community_board",
+    "created_weekday",
+    "created_hour",
+    "created_month"
+  ],
+  "validation": {
+    "constant": {
+      "n": 33813,
+      "positive_count": 20,
+      "base_rate": 0.0005914884807618372,
+      "pr_auc": 0.0005914884807618372,
+      "brier": 0.0005912149934231228,
+      "precision_top_100": 0.0,
+      "precision_top_10pct": 0.0005913660555884093,
+      "recall_top_10pct": 0.1
+    },
+    "grouped_problem_borough": {
+      "n": 33813,
+      "positive_count": 20,
+      "base_rate": 0.0005914884807618372,
+      "pr_auc": 0.003305741949361638,
+      "brier": 0.000589867747176241,
+      "precision_top_100": 0.02,
+      "precision_top_10pct": 0.004435245416913069,
+      "recall_top_10pct": 0.75
+    },
+    "logistic": {
+      "n": 33813,
+      "positive_count": 20,
+      "base_rate": 0.0005914884807618372,
+      "pr_auc": 0.002704751498207959,
+      "brier": 0.000590477957614331,
+      "precision_top_100": 0.0,
+      "precision_top_10pct": 0.003252513305736251,
+      "recall_top_10pct": 0.55
+    }
+  },
+  "test": {
+    "constant": {
+      "n": 17289,
+      "positive_count": 3,
+      "base_rate": 0.00017352073572791948,
+      "pr_auc": 0.00017352073572791948,
+      "brier": 0.00017351068086265145,
+      "precision_top_100": 0.0,
+      "precision_top_10pct": 0.0,
+      "recall_top_10pct": 0.0
+    },
+    "grouped_problem_borough": {
+      "n": 17289,
+      "positive_count": 3,
+      "base_rate": 0.00017352073572791948,
+      "pr_auc": 0.0005543237250554324,
+      "brier": 0.00017403543931759243,
+      "precision_top_100": 0.0,
+      "precision_top_10pct": 0.0,
+      "recall_top_10pct": 0.0
+    },
+    "logistic": {
+      "n": 17289,
+      "positive_count": 3,
+      "base_rate": 0.00017352073572791948,
+      "pr_auc": 0.0005132826021009848,
+      "brier": 0.00017367845114264535,
+      "precision_top_100": 0.0,
+      "precision_top_10pct": 0.0,
+      "recall_top_10pct": 0.0
+    },
+    "high_risk_threshold_from_validation": 0.0013329415478264461,
+    "high_risk_count": 1226,
+    "high_risk_precision": 0.0,
+    "high_risk_recall": 0.0,
+    "calibration": [
+      {
+        "n": 1729,
+        "mean_probability": 9.27492111430973e-05,
+        "observed_rate": 0.0
+      },
+      {
+        "n": 1729,
+        "mean_probability": 0.00012746729026411163,
+        "observed_rate": 0.0
+      },
+      {
+        "n": 1729,
+        "mean_probability": 0.00014554982752762498,
+        "observed_rate": 0.0
+      },
+      {
+        "n": 1729,
+        "mean_probability": 0.00016234884520716466,
+        "observed_rate": 0.0
+      },
+      {
+        "n": 1729,
+        "mean_probability": 0.0001910629021729432,
+        "observed_rate": 0.0
+      },
+      {
+        "n": 1728,
+        "mean_probability": 0.0002979462756447233,
+        "observed_rate": 0.0
+      },
+      {
+        "n": 1729,
+        "mean_probability": 0.00042804039848195487,
+        "observed_rate": 0.0
+      },
+      {
+        "n": 1729,
+        "mean_probability": 0.0005139853031056256,
+        "observed_rate": 0.001156737998843262
+      },
+      {
+        "n": 1729,
+        "mean_probability": 0.0006317476128211175,
+        "observed_rate": 0.000578368999421631
+      },
+      {
+        "n": 1729,
+        "mean_probability": 0.0014934960864047937,
+        "observed_rate": 0.0
+      }
+    ],
+    "by_problem": [
+      {
+        "group": "HEAT/HOT WATER",
+        "n": 6494,
+        "positive_count": 3,
+        "base_rate": 0.0004619648906683092,
+        "pr_auc": 0.0005482183602194398,
+        "brier": 0.0004623034886085674,
+        "precision_top_100": 0.0,
+        "precision_top_10pct": 0.0,
+        "recall_top_10pct": 0.0
+      },
+      {
+        "group": "Illegal Parking",
+        "n": 7242,
+        "positive_count": 0,
+        "base_rate": 0.0,
+        "pr_auc": null,
+        "brier": 4.707209727621852e-08,
+        "precision_top_100": 0.0,
+        "precision_top_10pct": 0.0,
+        "recall_top_10pct": null
+      },
+      {
+        "group": "Noise - Residential",
+        "n": 3553,
+        "positive_count": 0,
+        "base_rate": 0.0,
+        "pr_auc": null,
+        "brier": 5.262894812396538e-08,
+        "precision_top_100": 0.0,
+        "precision_top_10pct": 0.0,
+        "recall_top_10pct": null
+      }
+    ],
+    "by_borough": [
+      {
+        "group": "BRONX",
+        "n": 4238,
+        "positive_count": 3,
+        "base_rate": 0.0007078810759792355,
+        "pr_auc": 0.005894363755441692,
+        "brier": 0.0007072579279225661,
+        "precision_top_100": 0.0,
+        "precision_top_10pct": 0.0023584905660377358,
+        "recall_top_10pct": 0.3333333333333333
+      },
+      {
+        "group": "BROOKLYN",
+        "n": 5491,
+        "positive_count": 0,
+        "base_rate": 0.0,
+        "pr_auc": null,
+        "brier": 1.212528502689378e-07,
+        "precision_top_100": 0.0,
+        "precision_top_10pct": 0.0,
+        "recall_top_10pct": null
+      },
+      {
+        "group": "MANHATTAN",
+        "n": 3256,
+        "positive_count": 0,
+        "base_rate": 0.0,
+        "pr_auc": null,
+        "brier": 1.267339793912726e-06,
+        "precision_top_100": 0.0,
+        "precision_top_10pct": 0.0,
+        "recall_top_10pct": null
+      },
+      {
+        "group": "QUEENS",
+        "n": 3920,
+        "positive_count": 0,
+        "base_rate": 0.0,
+        "pr_auc": null,
+        "brier": 1.0722084142254024e-07,
+        "precision_top_100": 0.0,
+        "precision_top_10pct": 0.0,
+        "recall_top_10pct": null
+      },
+      {
+        "group": "STATEN ISLAND",
+        "n": 383,
+        "positive_count": 0,
+        "base_rate": 0.0,
+        "pr_auc": null,
+        "brier": 4.0420395830280665e-07,
+        "precision_top_100": 0.0,
+        "precision_top_10pct": 0.0,
+        "recall_top_10pct": null
+      }
+    ]
+  },
+  "publication_gate_passed": false
+}

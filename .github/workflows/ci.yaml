@@ -1,0 +1,66 @@
+name: CityOps CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: cityops
+          POSTGRES_USER: cityops
+          POSTGRES_PASSWORD: cityops_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cityops -d cityops"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://cityops:cityops_dev@localhost:5432/cityops
+      API_INTERNAL_URL: http://localhost:4000
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      WEB_ORIGIN: http://localhost:3000
+      CITYOPS_TEST_FIXTURE: '1'
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            apps/api/package-lock.json
+            apps/web/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci --prefix apps/api
+      - run: npm ci --prefix apps/web
+      - run: npm run lint --prefix apps/api
+      - run: npm run lint --prefix apps/web
+      - run: npm test --prefix apps/api
+      - run: python -m unittest discover -s analytics/modeling -p 'test_*.py'
+      - run: npm run build --prefix apps/api
+      - run: npm run build --prefix apps/web
+      - run: npm run migrate --prefix apps/api -- up
+      - run: npm run seed:fixture --prefix apps/api
+      - name: Start API and web
+        run: |
+          npm run start:prod --prefix apps/api > /tmp/cityops-api.log 2>&1 &
+          npm run start --prefix apps/web > /tmp/cityops-web.log 2>&1 &
+          for i in {1..30}; do
+            if curl --fail --silent http://localhost:4000/api/v1/health >/dev/null &&
+               curl --fail --silent http://localhost:3000/dashboard >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/cityops-api.log
+          cat /tmp/cityops-web.log
+          exit 1
+      - run: node tests/api/contracts.mjs
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+      - run: npm run test:e2e --prefix apps/web

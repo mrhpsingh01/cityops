@@ -1,0 +1,55 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: cityops
+      POSTGRES_USER: cityops
+      POSTGRES_PASSWORD: cityops_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - cityops_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cityops -d cityops"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  api:
+    build: ../apps/api
+    environment:
+      DATABASE_URL: postgres://cityops:cityops_dev@db:5432/cityops
+      API_PORT: 4000
+      WEB_ORIGIN: http://localhost:3000
+      NYC_311_APP_TOKEN: ${NYC_311_APP_TOKEN:-}
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["sh", "-c", "npm run migrate -- up && npm run start:prod"]
+  web:
+    build:
+      context: ../apps/web
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:4000
+    environment:
+      API_INTERNAL_URL: http://api:4000
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+  ingest:
+    profiles: ["ingest"]
+    build: ../apps/api
+    environment:
+      DATABASE_URL: postgres://cityops:cityops_dev@db:5432/cityops
+      NYC_311_APP_TOKEN: ${NYC_311_APP_TOKEN:-}
+      INGEST_START_DATE: ${INGEST_START_DATE:-2025-01-01}
+      INGEST_END_DATE: ${INGEST_END_DATE:-2025-02-01}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["npm", "run", "ingest"]
+volumes:
+  cityops_pg:
