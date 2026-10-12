@@ -1,8 +1,9 @@
 "use client";
 
 import Link from 'next/link';
+import * as Dialog from '@radix-ui/react-dialog';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { FormEvent, ReactNode, useEffect, useState } from 'react';
+import { FormEvent, ReactNode, useState } from 'react';
 import {
   ChartBarIcon, CompassIcon, DatabaseIcon, MapTrifoldIcon,
   NotebookIcon, PulseIcon, RowsIcon, ShieldCheckIcon,
@@ -20,40 +21,66 @@ const navigation = [
 ];
 const FALLBACK_PROBLEMS = ['Noise - Residential', 'HEAT/HOT WATER', 'Illegal Parking'];
 const FALLBACK_BOROUGHS = ['BRONX', 'BROOKLYN', 'MANHATTAN', 'QUEENS', 'STATEN ISLAND'];
+const globalKeys = ['from', 'toExclusive', 'problem', 'borough', 'agency', 'communityBoard', 'incidentZip'];
+const validDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value + 'T00:00:00Z').toISOString().slice(0, 10) === value;
+
+function FilterFields({ metadata, search, error, reset }: { metadata: Metadata | null; search: URLSearchParams; error: string; reset: () => void }) {
+  const min = metadata?.supportedScope.from ?? '2025-01-01';
+  const max = metadata?.supportedScope.toExclusive ?? '2025-02-01';
+  return <>
+    <label>From<input type="date" name="from" min={min} max={max} defaultValue={search.get('from') ?? DEFAULT_FILTERS.from} required /></label>
+    <label>To (exclusive)<input type="date" name="toExclusive" min={min} max={max} defaultValue={search.get('toExclusive') ?? DEFAULT_FILTERS.toExclusive} required /></label>
+    <label>Borough<select name="borough" defaultValue={search.get('borough') ?? ''}><option value="">All boroughs</option>{(metadata?.filters.boroughs.length ? metadata.filters.boroughs : FALLBACK_BOROUGHS).map((v) => <option key={v}>{v}</option>)}</select></label>
+    <label>Problem<select name="problem" defaultValue={search.get('problem') ?? ''}><option value="">All supported problems</option>{(metadata?.filters.problems.length ? metadata.filters.problems : FALLBACK_PROBLEMS).map((v) => <option key={v}>{v}</option>)}</select></label>
+    <label>Agency<select name="agency" defaultValue={search.get('agency') ?? ''}><option value="">All agencies</option>{(metadata?.filters.agencies ?? []).map((v) => <option key={v}>{v}</option>)}</select></label>
+    <label className="narrow-filter">Board<input name="communityBoard" defaultValue={search.get('communityBoard') ?? ''} placeholder="Any" /></label>
+    <label className="narrow-filter">ZIP<input name="incidentZip" defaultValue={search.get('incidentZip') ?? ''} placeholder="Any" inputMode="numeric" /></label>
+    <button type="submit" className="filter-apply">Apply</button>
+    <button type="button" className="filter-reset" onClick={reset}>Reset</button>
+    {error && <p className="filter-error" role="alert">{error}</p>}
+  </>;
+}
 
 export function Shell({ children, metadata }: { children: ReactNode; metadata: Metadata | null }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
-  useEffect(() => {
-    if (!filtersOpen) return;
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setFiltersOpen(false); };
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    document.addEventListener('keydown', closeOnEscape);
-    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener('keydown', closeOnEscape); };
-  }, [filtersOpen]);
+  const [filterError, setFilterError] = useState('');
   const pathname = usePathname();
   const router = useRouter();
   const search = useSearchParams();
-  const globalKeys = ['from', 'toExclusive', 'problem', 'borough', 'agency', 'communityBoard', 'incidentZip'];
   const globalQuery = new URLSearchParams();
   for (const key of globalKeys) {
     const value = search.get(key);
     if (value) globalQuery.set(key, value);
   }
   const query = globalQuery.toString();
+  const reset = () => { setFilterError(''); router.push(pathname); setFiltersOpen(false); };
   const apply = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const values = new FormData(event.currentTarget);
+    const from = String(values.get('from') ?? '');
+    const to = String(values.get('toExclusive') ?? '');
+    const min = metadata?.supportedScope.from ?? '2025-01-01';
+    const max = metadata?.supportedScope.toExclusive ?? '2025-02-01';
+    if (!validDate(from) || !validDate(to) || from >= to || from < min || to > max) {
+      setFilterError(`Choose a valid range from ${min} through ${max} (exclusive).`);
+      return;
+    }
     const next = new URLSearchParams();
     for (const key of globalKeys) {
-      const value = String(values.get(key) ?? '');
+      const value = String(values.get(key) ?? '').trim();
       if (value) next.set(key, value);
     }
+    if (pathname === '/dashboard' && search.get('grouping') === 'week') next.set('grouping', 'week');
+    if (pathname === '/map' && search.get('view') === 'change') next.set('view', 'change');
+    setFilterError('');
     router.push(pathname + '?' + next.toString());
     setFiltersOpen(false);
   };
   const navHref = (href: string) => href + (query ? '?' + query : '');
+  const checked = metadata?.asOf ? new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }).format(new Date(metadata.asOf)) : null;
+  const coverage = metadata?.loadedCoverage;
   return <div className="app-shell">
+    <a className="skip-link" href="#main-content">Skip to main content</a>
     <aside className="side-nav">
       <Link href="/" className="brand" aria-label="CityOps home"><span className="brand-mark"><DatabaseIcon size={22} weight="duotone" /></span><span>City<span className="brand-accent">Ops</span></span></Link>
       <div className="nav-caption">311 OPERATIONS INTELLIGENCE</div>
@@ -70,30 +97,21 @@ export function Shell({ children, metadata }: { children: ReactNode; metadata: M
       <header className="topbar">
         <div className="mobile-brand">City<span>Ops</span></div>
         <div className="topbar-title">NYC 311 / SERVICE REQUESTS</div>
-        <div className={'freshness ' + (metadata?.asOf ? '' : 'muted')}>
+        <div className={'freshness ' + (checked ? '' : 'muted')}>
           <span className="freshness-dot" />
-          {metadata?.asOf ? `Updated ${metadata.asOf.replace('T', ' ')} ET` : 'No published refresh'}
+          {checked ? `Source checked ${checked}` : 'No published refresh'}
         </div>
       </header>
-      <div className="mobile-filter-row"><button type="button" className="mobile-filter-toggle" aria-expanded={filtersOpen} aria-controls="global-filter-form" onClick={() => setFiltersOpen(true)}>Filter requests <span>↗</span></button></div>
-      {filtersOpen && <button type="button" className="filter-scrim" aria-label="Close filters" onClick={() => setFiltersOpen(false)} />}
-      <form id="global-filter-form" className={'filter-bar' + (filtersOpen ? ' mobile-open' : '')} key={query} onSubmit={apply} aria-label="Global filters">
-        <div className="mobile-filter-heading"><strong>Filter requests</strong><button type="button" aria-label="Close filters" onClick={() => setFiltersOpen(false)}>✕</button></div>
-        <label>From<input type="date" name="from" defaultValue={search.get('from') ?? DEFAULT_FILTERS.from} /></label>
-        <label>To (exclusive)<input type="date" name="toExclusive" defaultValue={search.get('toExclusive') ?? DEFAULT_FILTERS.toExclusive} /></label>
-        <label>Borough<select name="borough" defaultValue={search.get('borough') ?? ''}><option value="">All boroughs</option>{(metadata?.filters.boroughs.length ? metadata.filters.boroughs : FALLBACK_BOROUGHS).map((v) => <option key={v}>{v}</option>)}</select></label>
-        <label>Problem<select name="problem" defaultValue={search.get('problem') ?? ''}><option value="">All supported problems</option>{(metadata?.filters.problems.length ? metadata.filters.problems : FALLBACK_PROBLEMS).map((v) => <option key={v}>{v}</option>)}</select></label>
-        <label>Agency<select name="agency" defaultValue={search.get('agency') ?? ''}><option value="">All agencies</option>{(metadata?.filters.agencies ?? []).map((v) => <option key={v}>{v}</option>)}</select></label>
-        <label className="narrow-filter">Board<input name="communityBoard" defaultValue={search.get('communityBoard') ?? ''} placeholder="Any" /></label>
-        <label className="narrow-filter">ZIP<input name="incidentZip" defaultValue={search.get('incidentZip') ?? ''} placeholder="Any" inputMode="numeric" /></label>
-        <button type="submit" className="filter-apply">Apply</button>
-        <button type="button" className="filter-reset" onClick={() => { router.push(pathname); setFiltersOpen(false); }}>Reset</button>
-      </form>
+      <Dialog.Root open={filtersOpen} onOpenChange={(open) => { setFiltersOpen(open); setFilterError(''); }}>
+        <div className="mobile-filter-row"><Dialog.Trigger asChild><button type="button" className="mobile-filter-toggle">Filter requests <span>↗</span></button></Dialog.Trigger></div>
+        <Dialog.Portal><Dialog.Overlay className="dialog-overlay mobile-only" /><Dialog.Content className="filter-dialog mobile-only" aria-describedby={undefined}><div className="mobile-filter-heading"><Dialog.Title>Filter requests</Dialog.Title><Dialog.Close className="drawer-close" aria-label="Close filters">✕</Dialog.Close></div><form id="global-filter-form" className="filter-bar mobile-dialog-form" key={query} onSubmit={apply} aria-label="Global filters"><FilterFields metadata={metadata} search={search} error={filterError} reset={reset} /></form></Dialog.Content></Dialog.Portal>
+      </Dialog.Root>
+      <form className="filter-bar desktop-filter-bar" key={query} onSubmit={apply} aria-label="Global filters"><FilterFields metadata={metadata} search={search} error={filterError} reset={reset} /></form>
       <div className="coverage-strip">
-        <span><strong>Supported slice</strong> · Jan 1–31, 2025 · 3 problems</span>
-        <span>{metadata?.loadedCoverage.requestCount ? `${metadata.loadedCoverage.requestCount.toLocaleString()} records loaded` : 'Run the importer to load records'}</span>
+        <span><strong>Historical case study</strong> · supported Jan 1–31, 2025 · 3 problems</span>
+        <span>{coverage?.requestCount ? `${coverage.requestCount.toLocaleString()} records loaded · ${coverage.oldest ?? '—'} to ${coverage.newest ?? '—'}` : 'Run the importer to load records'}</span>
       </div>
-      <main className="page-content">{children}</main>
+      <main id="main-content" tabIndex={-1} className="page-content">{children}</main>
     </div>
   </div>;
 }

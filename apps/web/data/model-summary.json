@@ -1,0 +1,14 @@
+{
+  "modelVersion": "logreg-2025-jan-v1",
+  "testFrom": "2025-01-27",
+  "testToExclusive": "2025-02-01",
+  "testCount": 17289,
+  "positiveCount": 3,
+  "groupedBaselinePrAuc": 0.0005543237250554324,
+  "logisticPrAuc": 0.0005132826021009848,
+  "groupedBaselineTop100Precision": 0,
+  "logisticTop100Precision": 0,
+  "highRiskCount": 1226,
+  "highRiskPrecision": 0,
+  "publicationGatePassed": false
+}

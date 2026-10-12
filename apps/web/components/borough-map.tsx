@@ -31,7 +31,11 @@ export function BoroughMap({ areas, prior, filters, mode }: {
   const before = Object.fromEntries(prior.map((a) => [name(a.borough), a.requestCount]));
   const max = Math.max(...areas.map((a) => a.requestCount), 1);
   const selected = filters.borough?.toUpperCase();
-  const pick = (borough: string) => router.push('/map?' + filterParams({ ...filters, borough: selected === borough ? undefined : borough }));
+  const pick = (borough: string) => {
+    const params = filterParams({ ...filters, borough: selected === borough ? undefined : borough });
+    params.set('view', mode);
+    router.push('/map?' + params);
+  };
   return <div className="map-wrap">
     {geometry ? <svg className="borough-svg" viewBox="0 0 800 500" role="img" aria-label="NYC boroughs colored by selected request count or change">
       {paths.map((feature) => {
@@ -49,6 +53,6 @@ export function BoroughMap({ areas, prior, filters, mode }: {
       })}
     </svg> : <div className="map-loading">Loading official NYC borough boundaries…</div>}
     <div className="map-legend"><span>{mode === 'volume' ? 'Fewer reports' : 'Decrease'}</span><span className={'legend-ramp ' + mode} /><span>{mode === 'volume' ? 'More reports' : 'Increase'}</span></div>
-    {hover && <div className="map-hover"><strong>{hover}</strong><span>{integer(current[hover] ?? 0)} selected reports</span>{mode === 'change' && <span>{percent(before[hover] ? ((current[hover] ?? 0) - before[hover]) / before[hover] : null)} versus prior period</span>}</div>}
+    {hover && <div className="map-hover"><strong>{hover}</strong><span>{integer(current[hover] ?? 0)} selected reports</span>{mode === 'change' && <span>{percent(before[hover] ? ((current[hover] ?? 0) - before[hover]) / before[hover] : null)} versus {integer(before[hover] ?? 0)} prior reports</span>}</div>}
   </div>;
 }

@@ -16,6 +16,7 @@ services:
       retries: 10
   api:
     build: ../apps/api
+    restart: unless-stopped
     environment:
       DATABASE_URL: postgres://cityops:cityops_dev@db:5432/cityops
       API_PORT: 4000
@@ -26,6 +27,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/api/v1/health').then(r => { if (!r.ok) process.exit(1); return r.json(); }).then(body => { if (body.database !== 'ready') process.exit(1); }).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
     command: ["sh", "-c", "npm run migrate -- up && npm run start:prod"]
   web:
     build:
@@ -38,7 +45,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
   ingest:
     profiles: ["ingest"]
     build: ../apps/api

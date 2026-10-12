@@ -25,6 +25,14 @@ export class AnalyticsController {
   @Get('areas')
   areas(@Query() filters: AnalysisQueryDto) { return this.metrics.getAreas(filters); }
 
+  @Get('problem-signals')
+  @ApiOperation({ summary: 'Current and prior request counts with mature seven-day outcomes by problem' })
+  problemSignals(@Query() filters: AnalysisQueryDto) { return this.metrics.getProblemSignals(filters); }
+
+  @Get('area-problem-mix')
+  @ApiOperation({ summary: 'Request counts by borough and problem under the selected filters' })
+  areaProblemMix(@Query() filters: AnalysisQueryDto) { return this.metrics.getAreaProblemMix(filters); }
+
   @Get('resolution')
   resolution(@Query() filters: AnalysisQueryDto) { return this.metrics.getResolution(filters); }
 }

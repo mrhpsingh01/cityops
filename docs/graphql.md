@@ -28,6 +28,18 @@ query Dashboard($filters: AnalysisFilterInput!) {
     borough
     requestCount
   }
+  problemSignals(filters: $filters) {
+    problem
+    currentCount
+    priorCount
+    eligibleCount
+    closedWithin7Count
+  }
+  areaProblemMix(filters: $filters) {
+    borough
+    problem
+    requestCount
+  }
 }
 ```
 
@@ -42,6 +54,6 @@ query Dashboard($filters: AnalysisFilterInput!) {
 }
 ```
 
-`AnalysisFilterInput` accepts `from`, `toExclusive`, `problem`, `borough`, `agency`, `communityBoard`, and `incidentZip`. Dates are YYYY-MM-DD; the end is exclusive; the maximum span is 366 days. Inputs longer than 120 characters and invalid ranges are rejected. Grouping is `day` or `week`. List queries are server-limited to 30 problems and 10 boroughs. GraphQL requests have a 32 KiB JSON body cap and a validation budget of 50 fields and depth 6. Public production mode disables GraphiQL and introspection. The generated code-first schema is available from the running development API; Swagger documents REST only.
+`AnalysisFilterInput` accepts `from`, `toExclusive`, `problem`, `borough`, `agency`, `communityBoard`, and `incidentZip`. Dates are YYYY-MM-DD; the end is exclusive; the maximum span is 366 days. Inputs longer than 120 characters and invalid ranges are rejected. Grouping is `day` or `week`. The basic problem and borough ranking queries are server-limited to 30 and 10 rows respectively. `problemSignals` and `areaProblemMix` return grouped rows for the supported slice; their current scope is three problems. GraphQL requests have a 32 KiB JSON body cap and a validation budget of 50 fields and depth 6. Public production mode disables GraphiQL and introspection. The generated code-first schema is available from the running development API; Swagger documents REST only.
 
 The Resolution page requests `resolution(filters)` with `cohorts`, `durations`, `backlog`, and `asOf`. GraphQL is read-only; there are no mutations.

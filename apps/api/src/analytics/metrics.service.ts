@@ -104,6 +104,48 @@ export class MetricsService {
     return result.rows.map((row) => ({ borough: row.borough, requestCount: n(row.request_count) }));
   }
 
+  async getProblemSignals(input: Partial<AnalysisFilters>) {
+    const filters = normalizeFilters(input);
+    const prior = previousFilters(filters);
+    const { where, values } = filterSql({ ...filters, from: prior.from });
+    const cutoff = (await this.cutoff()).cutoff || '1900-01-01 00:00:00';
+    const result = await this.pool.query<{
+      problem: string; current_count: string; prior_count: string;
+      eligible_count: string; closed_within_7_count: string;
+    }>(`
+      SELECT problem,
+             count(*) FILTER (WHERE created_at_local >= $8::timestamp)::text AS current_count,
+             count(*) FILTER (WHERE created_at_local < $8::timestamp)::text AS prior_count,
+             count(*) FILTER (WHERE created_at_local >= $8::timestamp
+               AND created_at_local <= $9::timestamp - interval '7 days')::text AS eligible_count,
+             count(*) FILTER (WHERE created_at_local >= $8::timestamp
+               AND created_at_local <= $9::timestamp - interval '7 days'
+               AND closed_at_local >= created_at_local
+               AND closed_at_local <= created_at_local + interval '7 days')::text AS closed_within_7_count
+      FROM requests r WHERE ${where}
+      GROUP BY problem ORDER BY count(*) FILTER (WHERE created_at_local >= $8::timestamp) DESC, problem
+    `, [...values, filters.from, cutoff]);
+    return result.rows.map((row) => ({
+      problem: row.problem,
+      currentCount: n(row.current_count),
+      priorCount: n(row.prior_count),
+      eligibleCount: n(row.eligible_count),
+      closedWithin7Count: n(row.closed_within_7_count),
+    }));
+  }
+
+  async getAreaProblemMix(input: Partial<AnalysisFilters>) {
+    const { where, values } = filterSql(normalizeFilters(input));
+    const result = await this.pool.query<{ borough: string; problem: string; request_count: string }>(`
+      SELECT coalesce(borough, 'UNKNOWN') AS borough, problem, count(*)::text AS request_count
+      FROM requests r WHERE ${where}
+      GROUP BY 1, 2 ORDER BY 1, 2
+    `, values);
+    return result.rows.map((row) => ({
+      borough: row.borough, problem: row.problem, requestCount: n(row.request_count),
+    }));
+  }
+
   async getResolution(input: Partial<AnalysisFilters>) {
     const filters = normalizeFilters(input);
     const { where, values } = filterSql(filters);

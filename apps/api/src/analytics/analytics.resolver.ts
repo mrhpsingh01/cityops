@@ -46,6 +46,20 @@ export class AreaType {
   @Field(() => Int) requestCount!: number;
 }
 @ObjectType()
+export class ProblemSignalType {
+  @Field() problem!: string;
+  @Field(() => Int) currentCount!: number;
+  @Field(() => Int) priorCount!: number;
+  @Field(() => Int) eligibleCount!: number;
+  @Field(() => Int) closedWithin7Count!: number;
+}
+@ObjectType()
+export class AreaProblemMixType {
+  @Field() borough!: string;
+  @Field() problem!: string;
+  @Field(() => Int) requestCount!: number;
+}
+@ObjectType()
 export class CohortType {
   @Field() week!: string;
   @Field(() => Int) eligible!: number;
@@ -97,6 +111,14 @@ export class AnalyticsResolver {
   @Query(() => [AreaType])
   areaComparison(@Args('filters', { type: () => AnalysisFilterInput }) filters: AnalysisFilterInput) {
     return this.metrics.getAreas(normalizeFilters(filters));
+  }
+  @Query(() => [ProblemSignalType])
+  problemSignals(@Args('filters', { type: () => AnalysisFilterInput }) filters: AnalysisFilterInput) {
+    return this.metrics.getProblemSignals(normalizeFilters(filters));
+  }
+  @Query(() => [AreaProblemMixType])
+  areaProblemMix(@Args('filters', { type: () => AnalysisFilterInput }) filters: AnalysisFilterInput) {
+    return this.metrics.getAreaProblemMix(normalizeFilters(filters));
   }
   @Query(() => ResolutionType)
   resolution(@Args('filters', { type: () => AnalysisFilterInput }) filters: AnalysisFilterInput) {

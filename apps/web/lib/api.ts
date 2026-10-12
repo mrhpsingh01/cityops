@@ -71,6 +71,11 @@ export type Overview = {
 export type TrendPoint = { period: string; requestCount: number };
 export type Problem = { problem: string; requestCount: number };
 export type Area = { borough: string; requestCount: number };
+export type ProblemSignal = {
+  problem: string; currentCount: number; priorCount: number;
+  eligibleCount: number; closedWithin7Count: number;
+};
+export type AreaProblemMix = { borough: string; problem: string; requestCount: number };
 export type Resolution = {
   cohorts: Array<{ week: string; eligible: number; closedWithin7: number; rate: number | null }>;
   durations: Array<{ problem: string; sample: number; p50Hours: number | null; p75Hours: number | null; p90Hours: number | null; openCount: number }>;

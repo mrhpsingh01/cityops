@@ -27,9 +27,17 @@ assert.equal(dayEight.body.sevenDayClosureRate, 0.5);
 
 const trend = await get('/api/v1/trends' + scope + '&grouping=day');
 const problems = await get('/api/v1/problems' + scope);
+const signals = await get('/api/v1/problem-signals' + scope);
+const mix = await get('/api/v1/area-problem-mix' + scope);
 const requests = await get('/api/v1/requests' + scope + '&pageSize=100');
 assert.equal(trend.body.reduce((sum, row) => sum + row.requestCount, 0), 5);
 assert.equal(problems.body.reduce((sum, row) => sum + row.requestCount, 0), 5);
+assert.equal(signals.body.reduce((sum, row) => sum + row.currentCount, 0), overview.body.requestCount);
+assert.equal(signals.body.reduce((sum, row) => sum + row.priorCount, 0), overview.body.previousCount);
+assert.equal(signals.body.reduce((sum, row) => sum + row.eligibleCount, 0), overview.body.eligibleCount);
+assert.equal(signals.body.reduce((sum, row) => sum + row.closedWithin7Count, 0), 3);
+assert.equal(mix.body.reduce((sum, row) => sum + row.requestCount, 0), overview.body.requestCount);
+assert.equal(mix.body.find((row) => row.borough === 'BRONX' && row.problem === 'HEAT/HOT WATER').requestCount, 2);
 assert.equal(requests.body.items.length, 5);
 const detail = await get('/api/v1/requests/fixture-h2');
 assert.equal(detail.body.status_normalized, 'open');
@@ -50,12 +58,14 @@ const gqlResponse = await fetch(base + '/graphql', {
   headers: { 'content-type': 'application/json' },
   body: JSON.stringify({
     operationName: 'Dashboard',
-    query: 'query Dashboard($filters: AnalysisFilterInput!) { overview(filters: $filters) { requestCount } }',
+    query: 'query Dashboard($filters: AnalysisFilterInput!) { overview(filters: $filters) { requestCount } problemSignals(filters: $filters) { currentCount priorCount } areaProblemMix(filters: $filters) { requestCount } }',
     variables: { filters: { from: '2025-01-18', toExclusive: '2025-02-01' } },
   }),
 });
 const graphql = await gqlResponse.json();
 assert.equal(graphql.data.overview.requestCount, overview.body.requestCount);
+assert.equal(graphql.data.problemSignals.reduce((sum, row) => sum + row.currentCount, 0), overview.body.requestCount);
+assert.equal(graphql.data.areaProblemMix.reduce((sum, row) => sum + row.requestCount, 0), overview.body.requestCount);
 const excessiveQuery = `query Dashboard { ${Array.from({ length: 51 }, (_, i) =>
   `card${i}: overview(filters: {from: "2025-01-18", toExclusive: "2025-02-01"}) { requestCount }`).join(' ')} }`;
 const rejected = await fetch(base + '/graphql', {

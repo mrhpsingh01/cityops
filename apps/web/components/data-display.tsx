@@ -13,7 +13,8 @@ export function EmptyState({ title = 'No records for this view', detail }: { tit
   return <div className="empty-state"><div className="empty-symbol">∅</div><h3>{title}</h3><p>{detail ?? 'Try a broader date range or remove a filter. CityOps only includes the stated supported slice.'}</p></div>;
 }
 export function ErrorPanel({ message }: { message: string }) {
-  return <div className="error-panel" role="alert"><strong>Data is unavailable</strong><p>{message}</p><p>Start PostgreSQL, run the migration and importer, then refresh this page.</p></div>;
+  const invalid = /date|filter|range|invalid|validation|bad request/i.test(message);
+  return <div className="error-panel" role="alert"><strong>{invalid ? 'Check the selected filters' : 'Data is unavailable'}</strong><p>{message}</p><p>{invalid ? 'Choose dates within the supported coverage, with From earlier than To.' : 'The published data could not be loaded. Refresh the page or check the local API and database.'}</p><Link href="/dashboard">Reset to the supported view ↗</Link></div>;
 }
 export function MetricCard({ label, value, note, accent = false }: { label: string; value: string; note: string; accent?: boolean }) {
   return <article className={'metric-card ' + (accent ? 'accent' : '')}><div className="metric-label">{label}</div><div className="metric-value">{value}</div><div className="metric-note">{note}</div></article>;
@@ -21,23 +22,42 @@ export function MetricCard({ label, value, note, accent = false }: { label: stri
 export function SectionHeading({ eyebrow, title, detail, action }: { eyebrow?: string; title: string; detail?: string; action?: React.ReactNode }) {
   return <div className="section-heading"><div><div className="eyebrow">{eyebrow}</div><h2>{title}</h2>{detail && <p>{detail}</p>}</div>{action}</div>;
 }
-export function TrendChart({ points, filters }: { points: TrendPoint[]; filters: Filters }) {
-  if (!points.length) return <EmptyState />;
-  const max = Math.max(...points.map((p) => p.requestCount), 1);
-  const selected = points.length > 17 ? points.filter((_, i) => i % 2 === 0) : points;
+const day = 86400000;
+const dateAt = (timestamp: number) => new Date(timestamp).toISOString().slice(0, 10);
+export function TrendChart({ current, previous, filters, grouping, priorAvailable }: { current: TrendPoint[]; previous: TrendPoint[]; filters: Filters; grouping: 'day' | 'week'; priorAvailable: boolean }) {
+  const start = Date.parse(filters.from + 'T00:00:00Z');
+  const end = Date.parse(filters.toExclusive + 'T00:00:00Z');
+  const days = Math.round((end - start) / day);
+  if (!Number.isFinite(days) || days < 1) return <EmptyState detail="Choose a valid date range to compare periods." />;
+  const priorStart = start - (end - start);
+  const currentByDate = new Map(current.map((point) => [point.period, point.requestCount]));
+  const previousByDate = new Map(previous.map((point) => [point.period, point.requestCount]));
+  const step = grouping === 'week' ? 7 : 1;
+  const bins = Array.from({ length: Math.ceil(days / step) }, (_, index) => {
+    const offset = index * step;
+    const span = Math.min(step, days - offset);
+    const selectedFrom = dateAt(start + offset * day);
+    const selectedTo = dateAt(start + (offset + span) * day);
+    const priorFrom = dateAt(priorStart + offset * day);
+    const priorTo = dateAt(priorStart + (offset + span) * day);
+    let selectedCount = 0; let priorCount = 0;
+    for (let i = 0; i < span; i++) {
+      selectedCount += currentByDate.get(dateAt(start + (offset + i) * day)) ?? 0;
+      priorCount += previousByDate.get(dateAt(priorStart + (offset + i) * day)) ?? 0;
+    }
+    return { selectedFrom, selectedTo, priorFrom, priorTo, selectedCount, priorCount, partial: span < step };
+  });
+  const max = Math.max(1, ...bins.flatMap((bin) => priorAvailable ? [bin.selectedCount, bin.priorCount] : [bin.selectedCount]));
   return <>
-    <div className="trend-chart" role="img" aria-label="Daily requests created; each bar opens matching requests">
-      {selected.map((point) => {
-        const next = new Date(Date.parse(point.period + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10);
-        const query = filterParams({ ...filters, from: point.period, toExclusive: next });
-        return <Link className="trend-col" key={point.period} href={'/explore?' + query} title={`${point.period}: ${integer(point.requestCount)} requests`} aria-label={`${point.period}: ${integer(point.requestCount)} requests. Explore records.`}>
-          <span className="trend-count">{integer(point.requestCount)}</span>
-          <span className="trend-bar" style={{ height: `${Math.max(8, point.requestCount / max * 100)}%` }} />
-          <span className="trend-date">{point.period.slice(5)}</span>
-        </Link>;
-      })}
-    </div>
-    <p className="chart-caption">Daily count of selected requests. Click a bar to inspect records for that date.</p>
+    <div className="comparison-legend"><span><i className="legend-selected" />Selected · {filters.from} to {dateAt(end - day)}</span><span>{priorAvailable && <i className="legend-prior" />}Prior · {priorAvailable ? `${dateAt(priorStart)} to ${dateAt(start - day)}` : 'outside imported coverage'}</span></div>
+    <div className="trend-scroll"><div className="trend-chart comparison-chart" style={{ minWidth: `${Math.max(100, bins.length * (grouping === 'week' ? 93 : 49))}px` }}>
+      {bins.map((bin) => <div className="trend-pair" key={bin.selectedFrom}>
+        {priorAvailable && <Link className="trend-col prior" href={'/explore?' + filterParams({ ...filters, from: bin.priorFrom, toExclusive: bin.priorTo })} title={`Prior ${bin.priorFrom}–${bin.priorTo}: ${integer(bin.priorCount)} requests`} aria-label={`Prior ${bin.priorFrom} to ${bin.priorTo}: ${integer(bin.priorCount)} reports. Explore records.`}><span className="trend-bar" style={{ height: `${Math.max(2, bin.priorCount / max * 100)}%` }} /></Link>}
+        <Link className="trend-col selected" href={'/explore?' + filterParams({ ...filters, from: bin.selectedFrom, toExclusive: bin.selectedTo })} title={`Selected ${bin.selectedFrom}–${bin.selectedTo}: ${integer(bin.selectedCount)} requests`} aria-label={`Selected ${bin.selectedFrom} to ${bin.selectedTo}: ${integer(bin.selectedCount)} reports. Explore records.`}><span className="trend-bar" style={{ height: `${Math.max(2, bin.selectedCount / max * 100)}%` }} /></Link>
+        <span className="trend-date">{bin.selectedFrom.slice(5)}{bin.partial ? ' *' : ''}</span>
+      </div>)}
+    </div></div>
+    <p className="chart-caption">{grouping === 'week' ? 'Seven-day bins start at the selected From date. * Final bin is shorter.' : 'One bin per day; scroll to inspect the full period.'} Bars open matching request records. {priorAvailable ? 'Missing days within coverage count as zero.' : 'The earlier comparison is unavailable because that window precedes the import.'}</p>
   </>;
 }
 export function Breakdown({ rows, filters }: { rows: Problem[]; filters: Filters }) {

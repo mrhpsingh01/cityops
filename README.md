@@ -4,16 +4,16 @@
 
 ![CityOps dashboard](docs/dashboard-preview.png)
 
-[Five-minute walkthrough](docs/walkthrough.md) · [Mobile preview](docs/mobile-preview.png)
+[Five-minute walkthrough](docs/walkthrough.md) · [Overview graphs](docs/overview-graphs.png) · [Mobile preview](docs/mobile-preview.png)
 
 The first supported release imports **January 1–31, 2025** for **Noise - Residential**, **HEAT/HOT WATER**, and **Illegal Parking**. Those 181,205 source requests were profiled and reconciled on October 10, 2026. The default dashboard compares January 18–31 with the preceding 14 days. It shows the source range and last *actual* successful refresh; it does not claim live data.
 
 ## What is implemented
 
-- Next.js App Router dashboard with URL-persisted filters, accessible chart links, request detail, borough map using official NYC DCP boundaries, resolution cohorts, insights, and methodology.
+- Next.js App Router dashboard with URL-persisted filters, an aligned current/prior trend, problem momentum and seven-day outcome charts, a borough problem-mix view, chart definition drawers, a responsive request list, and a borough map using official NYC DCP boundaries. Radix Dialog manages keyboard and focus behavior for filters, explanations, and request details.
 - NestJS API with REST, Swagger at `/docs`, GraphQL at `/graphql`, validated bounded filters, keyset pagination, and capped CSV export. REST and GraphQL use the same metric service.
 - PostgreSQL migration, staged NYC SODA ingestion with daily source-count reconciliation, transactional publication, upserts, quality flags, run records, daily aggregates, and an open-status snapshot.
-- Python baseline and logistic-regression experiment with a chronological holdout and feature-leakage contract. The public risk ranking is withheld because the held-out test has only three positive outcomes and the model did not beat the grouped baseline.
+- Python baseline and logistic-regression experiment with a chronological holdout and feature-leakage contract. The Risk page displays measured held-out results; the public ranking is withheld because the test has only three positive outcomes and the model did not beat the grouped baseline.
 - Deterministic fixture, API contract checks, browser smoke flow, and GitHub Actions CI.
 
 ## Quick start
@@ -70,7 +70,7 @@ npm run build --prefix apps/api
 npm run build --prefix apps/web
 ```
 
-CI migrates a disposable PostgreSQL service, loads an eight-row deterministic fixture, starts both apps, checks API metric contracts, and runs the Playwright investigation flow. It never calls the live NYC API. The `ingest.yaml` workflow is disabled until `CITYOPS_INGEST_ENABLED=true` and the database secret and date variables are configured.
+CI migrates a disposable PostgreSQL service, loads an eight-row deterministic fixture, starts both apps, checks API metric contracts, and runs Playwright checks for the investigation flow, map mode, invalid dates, and comparison coverage. It never calls the live NYC API. The `ingest.yaml` workflow is disabled until `CITYOPS_INGEST_ENABLED=true` and the database secret and date variables are configured.
 
 ## Documentation
 
