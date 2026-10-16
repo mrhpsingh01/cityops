@@ -24,7 +24,7 @@ export function filterParams(filters: Filters) {
   for (const [key, value] of Object.entries(filters)) if (value) params.set(key, value);
   return params;
 }
-const base = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
+const base = process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 export const browserApi = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 async function responseJson<T>(response: Response): Promise<T> {
@@ -91,3 +91,91 @@ export type RequestRow = {
 };
 
 export async function getMetadata(): Promise<Metadata> { return rest<Metadata>('metadata'); }
+
+export type HotspotCluster = {
+  clusterId: string;
+  complaintType: string;
+  borough: string;
+  incidentCount: number;
+  centroid: { type: string; coordinates: [number, number] };
+  boundingHull: { type: string; rawJson: string };
+  radiusMeters: number;
+  firstReportedAt: string;
+  latestReportedAt: string;
+  severityTier: 'CRITICAL' | 'ELEVATED' | 'MONITOR';
+  triageHypothesis: string;
+  predictedTtcHours: number;
+  ttcComparison: string;
+};
+
+export type DispatchAlertResult = {
+  dispatchId: string;
+  clusterId: string;
+  dispatchedAt: string;
+  status: 'delivered' | 'simulated' | 'failed';
+  channel: string;
+  destinationUrl: string | null;
+  responseStatus: number;
+  payloadPreview: string;
+  message: string;
+};
+
+export type ModelGovernance = {
+  asOf: string;
+  headline: string;
+  modelV1: {
+    name: string;
+    modelVersion: string;
+    status: string;
+    baseRate: number;
+    reason: string;
+    gatePassed: boolean;
+    testHoldoutRecords: number;
+    testPositiveCount: number;
+    modelCardUrl: string;
+    modelCardSummary: string;
+  };
+  modelV2: {
+    name: string;
+    modelVersion: string;
+    status: string;
+    target: string;
+    holdoutMae: number;
+    holdoutRmse: number;
+    holdoutMedAe: number;
+    baselineMae: number;
+    baselineRmse: number;
+    baselineMedAe: number;
+    beatsBaseline: boolean;
+    servingMethod: string;
+    trainingDataSource: string;
+    holdoutRecords: number;
+    featureImportances: Array<{ feature: string; importancePct: number; description: string }>;
+    benchmarks: Array<{ problem: string; medianHours: number; comparison: string }>;
+  };
+};
+
+export type DataQuality = {
+  latestRun: { run_id: string; started_at: string; ended_at: string | null; status: string; rows_seen: number | null; rows_inserted: number | null; rows_updated: number | null; error_message: string | null } | null;
+  flags: Record<string, number>;
+  quarantined: number;
+};
+export async function getDataQuality(): Promise<DataQuality | null> {
+  return rest<DataQuality>('data-quality').catch(() => null);
+}
+
+export async function getHotspots(params?: URLSearchParams): Promise<HotspotCluster[]> {
+  return rest<HotspotCluster[]>('hotspots', params).catch(() => []);
+}
+
+export async function getModelGovernance(): Promise<ModelGovernance | null> {
+  return rest<ModelGovernance>('models/governance').catch(() => null);
+}
+
+export async function dispatchAlert(clusterId: string): Promise<DispatchAlertResult> {
+  const url = `${browserApi}/api/v1/hotspots/${encodeURIComponent(clusterId)}/dispatch-alert`;
+  const res = await fetch(url, { method: 'POST' });
+  if (!res.ok) throw new Error(`Dispatch failed with HTTP ${res.status}`);
+  return res.json();
+}
+

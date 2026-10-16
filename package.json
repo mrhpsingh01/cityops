@@ -1,0 +1,22 @@
+{
+  "name": "cityops",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CityOps - Active Civic Operations & Triage Platform",
+  "scripts": {
+    "demo": "docker compose -f infra/compose.yaml up --build -d db api web",
+    "db:migrate": "npm run migrate --prefix apps/api -- up",
+    "db:seed:fixture": "npm run seed:postgis --prefix apps/api",
+    "ingest:incremental": "npm run ingest:incremental --prefix apps/api",
+    "build:api": "npm run build --prefix apps/api",
+    "build:web": "npm run build --prefix apps/web",
+    "build": "npm run build:api && npm run build:web",
+    "lint:api": "npm run lint --prefix apps/api",
+    "lint": "npm run lint:api",
+    "test:api": "npm test --prefix apps/api",
+    "test:ml": "python -m unittest discover -s analytics/modeling -p \"test_*.py\"",
+    "test:web": "npm run test:model-summary --prefix apps/web",
+    "test:contracts": "node tests/api/contracts.mjs",
+    "test": "npm run test:api && npm run test:ml && npm run test:web"
+  }
+}

@@ -20,7 +20,7 @@ export class MetadataController {
       this.pool.query<{ agency_code: string }>('SELECT DISTINCT agency_code FROM requests WHERE agency_code IS NOT NULL ORDER BY agency_code'),
       this.pool.query<{ community_board: string }>('SELECT DISTINCT community_board FROM requests WHERE community_board IS NOT NULL ORDER BY community_board'),
       this.pool.query<{ ended_at: string; status: string; source_from: string; source_to_exclusive: string }>(`
-        SELECT to_char(ended_at AT TIME ZONE 'America/New_York', 'YYYY-MM-DD"T"HH24:MI:SS') AS ended_at,
+        SELECT to_char(ended_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS ended_at,
                status, source_from::text, source_to_exclusive::text
         FROM ingestion_runs WHERE status = 'succeeded' ORDER BY ended_at DESC LIMIT 1`),
     ]);

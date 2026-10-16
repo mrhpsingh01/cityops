@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { Breakdown, Areas, ErrorPanel, MetricCard, SectionHeading, TrendChart, closurePercent, hours, integer, percent } from '@/components/data-display';
 import { MetricExplain } from '@/components/metric-explain';
+import { HeadlineBanner } from '@/components/headline-banner';
 import { BoroughProblemMix, ProblemMovement, SevenDayOutcomes } from '@/components/overview-visuals';
-import { Area, AreaProblemMix, Filters, getMetadata, gql, Metadata, Overview, Problem, ProblemSignal, Search, TrendPoint, filtersFromSearch, filterParams } from '@/lib/api';
+import { Area, AreaProblemMix, Filters, getHotspots, getMetadata, gql, Metadata, Overview, Problem, ProblemSignal, Search, TrendPoint, filtersFromSearch, filterParams } from '@/lib/api';
 
 const QUERY = `query Dashboard($filters: AnalysisFilterInput!, $priorFilters: AnalysisFilterInput!) {
   overview(filters: $filters) {
@@ -16,8 +17,9 @@ const QUERY = `query Dashboard($filters: AnalysisFilterInput!, $priorFilters: An
   areaComparison(filters: $filters) { borough requestCount }
   problemSignals(filters: $filters) { problem currentCount priorCount eligibleCount closedWithin7Count }
   areaProblemMix(filters: $filters) { borough problem requestCount }
+  resolution(filters: $filters) { durations { problem sample p50Hours } }
 }`;
-type DashboardData = { overview: Overview; currentTrend: TrendPoint[]; priorTrend: TrendPoint[]; problemBreakdown: Problem[]; areaComparison: Area[]; problemSignals: ProblemSignal[]; areaProblemMix: AreaProblemMix[] };
+type DashboardData = { overview: Overview; currentTrend: TrendPoint[]; priorTrend: TrendPoint[]; problemBreakdown: Problem[]; areaComparison: Area[]; problemSignals: ProblemSignal[]; areaProblemMix: AreaProblemMix[]; resolution: { durations: Array<{ problem: string; sample: number; p50Hours: number | null }> } };
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<Search> }) {
   const search = await searchParams;
@@ -28,7 +30,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const priorFilters = { ...filters, from: priorFrom, toExclusive: filters.from };
   let data: DashboardData;
   let metadata: Metadata;
-  try { [data, metadata] = await Promise.all([gql<DashboardData>(QUERY, { filters, priorFilters }), getMetadata()]); }
+  let hotspotCount = 0;
+  const hotspotParams = new URLSearchParams();
+  if (filters.problem) hotspotParams.set('problem', filters.problem);
+  if (filters.borough) hotspotParams.set('borough', filters.borough);
+  try { let spots; [data, metadata, spots] = await Promise.all([gql<DashboardData>(QUERY, { filters, priorFilters }), getMetadata(), getHotspots(hotspotParams)]); hotspotCount = spots.length; }
   catch (error) { return <><div className="page-heading"><div className="eyebrow">OVERVIEW</div><h1>What changed in reported requests?</h1></div><ErrorPanel message={String(error)} /></>; }
   const { overview: summary } = data;
   const current = summary.requestCount;
@@ -37,6 +43,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const priorAvailable = priorFrom >= metadata.supportedScope.from && filters.from <= metadata.supportedScope.toExclusive;
   return <>
     <div className="page-heading spread"><div><div className="eyebrow">OVERVIEW / HISTORICAL CASE STUDY</div><h1>What changed in reported requests?</h1><p>Intake, closure, and area signals for the selected creation period.</p></div><Link className="text-action" href={'/methodology?' + filterParams(filters)}>How these metrics work ↗</Link></div>
+    <HeadlineBanner filters={filters} durations={data.resolution.durations} hotspotCount={hotspotCount} />
     <div className="metric-grid">
       <MetricCard label="REQUESTS CREATED" value={integer(current)} note={`${filters.from} to ${filters.toExclusive} (exclusive)`} accent />
       <MetricCard label="VS. PREVIOUS PERIOD" value={change == null ? 'No baseline' : `${change >= 0 ? '+' : ''}${percent(change)}`} note={`${integer(previous)} in the prior equal-length period`} />

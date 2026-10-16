@@ -11,13 +11,16 @@
     "start": "node dist/main.js",
     "start:dev": "node --watch --require ts-node/register src/main.ts",
     "start:prod": "node dist/main.js",
+    "start:cloud": "node scripts/bootstrap.js",
     "lint": "tsc --noEmit",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "migrate": "node scripts/migrate.js",
     "ingest": "tsx src/ingest/cli.ts",
-    "seed:fixture": "node scripts/seed-fixture.js"
+    "ingest:incremental": "tsx src/ingest/incremental.ts",
+    "seed:fixture": "node scripts/seed-fixture.js",
+    "seed:postgis": "node scripts/seed-fixture.js"
   },
   "dependencies": {
     "@apollo/server": "^5.0.0",

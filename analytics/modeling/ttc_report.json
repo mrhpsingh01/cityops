@@ -1,0 +1,93 @@
+{
+  "model_version": "hist-gbr-2025-v2",
+  "target": "predicted_ttc_hours (Time-to-Close in hours)",
+  "status": "ACTIVE_PRODUCTION",
+  "sample_counts": {
+    "train": 2913,
+    "validation": 817,
+    "test": 845
+  },
+  "evaluation": {
+    "validation": {
+      "grouped_median_baseline": {
+        "mae": 5.31,
+        "rmse": 7.64,
+        "medae": 2.86
+      },
+      "hist_gradient_boosting": {
+        "mae": 5.76,
+        "rmse": 8.48,
+        "medae": 3.05
+      }
+    },
+    "test": {
+      "grouped_median_baseline": {
+        "mae": 5.07,
+        "rmse": 7.26,
+        "medae": 2.77
+      },
+      "ridge_baseline": {
+        "mae": 5.12,
+        "rmse": 7.32,
+        "medae": 2.74
+      },
+      "hist_gradient_boosting": {
+        "mae": 5.81,
+        "rmse": 8.39,
+        "medae": 3.25
+      }
+    }
+  },
+  "feature_importances": [
+    {
+      "feature": "complaint_type",
+      "importance_pct": 99.9,
+      "description": "Permutation importance (validation MAE increase) for complaint_type"
+    },
+    {
+      "feature": "spatial_density",
+      "importance_pct": 0.1,
+      "description": "Permutation importance (validation MAE increase) for spatial_density"
+    },
+    {
+      "feature": "agency",
+      "importance_pct": 0.0,
+      "description": "Permutation importance (validation MAE increase) for agency"
+    },
+    {
+      "feature": "borough",
+      "importance_pct": 0.0,
+      "description": "Permutation importance (validation MAE increase) for borough"
+    },
+    {
+      "feature": "hour_of_day",
+      "importance_pct": 0.0,
+      "description": "Permutation importance (validation MAE increase) for hour_of_day"
+    },
+    {
+      "feature": "day_of_week",
+      "importance_pct": 0.0,
+      "description": "Permutation importance (validation MAE increase) for day_of_week"
+    }
+  ],
+  "resolution_benchmarks": {
+    "HEAT/HOT WATER": {
+      "median_hours": 45.3,
+      "sample_size": 2154,
+      "comparison": "3.3x slower than the citywide median (13.7h)"
+    },
+    "Illegal Parking": {
+      "median_hours": 10.2,
+      "sample_size": 1578,
+      "comparison": "1.3x faster than the citywide median (13.7h)"
+    },
+    "Noise - Residential": {
+      "median_hours": 4.9,
+      "sample_size": 843,
+      "comparison": "2.8x faster than the citywide median (13.7h)"
+    }
+  },
+  "beats_grouped_median_baseline": false,
+  "serving_method": "grouped median of observed closure hours per (problem, borough)",
+  "training_data_source": "PostgreSQL requests table (4575 closed requests, Jan 2025)"
+}

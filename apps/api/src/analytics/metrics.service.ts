@@ -2,6 +2,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Pool } from 'pg';
 import { PG_POOL } from '../database/database.module';
 import { AnalysisFilters, filterSql, normalizeFilters } from './filters';
+import { HotspotsService } from '../hotspots/hotspots.service';
+import { HotspotQueryDto } from '../hotspots/hotspots.dto';
 
 function n(value: unknown): number { return value == null ? 0 : Number(value); }
 function previousFilters(filters: AnalysisFilters): AnalysisFilters {
@@ -15,7 +17,14 @@ function previousFilters(filters: AnalysisFilters): AnalysisFilters {
 
 @Injectable()
 export class MetricsService {
-  constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
+  constructor(
+    @Inject(PG_POOL) private readonly pool: Pool,
+    private readonly hotspotsService: HotspotsService,
+  ) {}
+
+  async getHotspots(query?: HotspotQueryDto) {
+    return this.hotspotsService.getHotspots(query);
+  }
 
   async cutoff() {
     const result = await this.pool.query<{ as_of: string; cutoff: string }>(`

@@ -1,5 +1,6 @@
 import { Global, Inject, Injectable, Module, OnModuleDestroy } from '@nestjs/common';
 import { Pool } from 'pg';
+import { buildPoolConfig } from './pool-config';
 
 export const PG_POOL = 'PG_POOL';
 
@@ -14,12 +15,7 @@ export class DatabaseLifecycle implements OnModuleDestroy {
   providers: [
     {
       provide: PG_POOL,
-      useFactory: () => new Pool({
-        connectionString: process.env.DATABASE_URL,
-        max: 10,
-        connectionTimeoutMillis: 5000,
-        statement_timeout: 15000,
-      }),
+      useFactory: () => new Pool(buildPoolConfig()),
     },
     DatabaseLifecycle,
   ],

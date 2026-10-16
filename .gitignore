@@ -8,7 +8,7 @@
 **/__pycache__/
 **/.venv/
 **/*.pyc
-**/model.joblib
+**/*.joblib
 **/exports/
 .DS_Store
 Thumbs.db

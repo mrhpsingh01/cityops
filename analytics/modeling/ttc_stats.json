@@ -1,0 +1,65 @@
+{
+  "modelVersion": "hist-gbr-2025-v2",
+  "status": "ACTIVE_PRODUCTION",
+  "benchmarks": {
+    "HEAT/HOT WATER": {
+      "median_hours": 45.3,
+      "sample_size": 2154,
+      "comparison": "3.3x slower than the citywide median (13.7h)"
+    },
+    "Illegal Parking": {
+      "median_hours": 10.2,
+      "sample_size": 1578,
+      "comparison": "1.3x faster than the citywide median (13.7h)"
+    },
+    "Noise - Residential": {
+      "median_hours": 4.9,
+      "sample_size": 843,
+      "comparison": "2.8x faster than the citywide median (13.7h)"
+    }
+  },
+  "servingMethod": "grouped median of observed closure hours per (problem, borough)",
+  "trainingDataSource": "PostgreSQL requests table (4575 closed requests, Jan 2025)",
+  "testMetrics": {
+    "mae": 5.81,
+    "rmse": 8.39,
+    "medae": 3.25
+  },
+  "baselineMetrics": {
+    "mae": 5.07,
+    "rmse": 7.26,
+    "medae": 2.77
+  },
+  "featureImportances": [
+    {
+      "feature": "complaint_type",
+      "importance_pct": 99.9,
+      "description": "Permutation importance (validation MAE increase) for complaint_type"
+    },
+    {
+      "feature": "spatial_density",
+      "importance_pct": 0.1,
+      "description": "Permutation importance (validation MAE increase) for spatial_density"
+    },
+    {
+      "feature": "agency",
+      "importance_pct": 0.0,
+      "description": "Permutation importance (validation MAE increase) for agency"
+    },
+    {
+      "feature": "borough",
+      "importance_pct": 0.0,
+      "description": "Permutation importance (validation MAE increase) for borough"
+    },
+    {
+      "feature": "hour_of_day",
+      "importance_pct": 0.0,
+      "description": "Permutation importance (validation MAE increase) for hour_of_day"
+    },
+    {
+      "feature": "day_of_week",
+      "importance_pct": 0.0,
+      "description": "Permutation importance (validation MAE increase) for day_of_week"
+    }
+  ]
+}

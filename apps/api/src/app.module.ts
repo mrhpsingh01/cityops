@@ -6,6 +6,8 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { RequestsModule } from './requests/requests.module';
 import { MetadataModule } from './metadata/metadata.module';
 import { HealthModule } from './health/health.module';
+import { HotspotsModule } from './hotspots/hotspots.module';
+import { GovernanceModule } from './governance/governance.module';
 import { GraphQLError, ValidationContext } from 'graphql';
 
 const queryBudgetRule = (context: ValidationContext) => {
@@ -29,6 +31,8 @@ const queryBudgetRule = (context: ValidationContext) => {
     RequestsModule,
     MetadataModule,
     HealthModule,
+    HotspotsModule,
+    GovernanceModule,
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: true,

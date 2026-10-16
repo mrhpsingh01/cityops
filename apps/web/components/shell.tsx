@@ -8,7 +8,8 @@ import {
   ChartBarIcon, CompassIcon, DatabaseIcon, MapTrifoldIcon,
   NotebookIcon, PulseIcon, RowsIcon, ShieldCheckIcon,
 } from '@phosphor-icons/react';
-import { DEFAULT_FILTERS, Metadata } from '@/lib/api';
+import { DEFAULT_FILTERS, DataQuality, Metadata, ModelGovernance } from '@/lib/api';
+import { TelemetryBar } from './telemetry-bar';
 
 const navigation = [
   { href: '/dashboard', label: 'Overview', icon: ChartBarIcon },
@@ -41,7 +42,17 @@ function FilterFields({ metadata, search, error, reset }: { metadata: Metadata |
   </>;
 }
 
-export function Shell({ children, metadata }: { children: ReactNode; metadata: Metadata | null }) {
+export function Shell({
+  children,
+  metadata,
+  governance,
+  dataQuality,
+}: {
+  children: ReactNode;
+  metadata: Metadata | null;
+  governance?: ModelGovernance | null;
+  dataQuality?: DataQuality | null;
+}) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filterError, setFilterError] = useState('');
   const pathname = usePathname();
@@ -94,6 +105,7 @@ export function Shell({ children, metadata }: { children: ReactNode; metadata: M
       </div>
     </aside>
     <div className="app-main">
+      <TelemetryBar metadata={metadata} governance={governance} dataQuality={dataQuality} />
       <header className="topbar">
         <div className="mobile-brand">City<span>Ops</span></div>
         <div className="topbar-title">NYC 311 / SERVICE REQUESTS</div>

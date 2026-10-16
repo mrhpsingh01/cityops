@@ -74,4 +74,44 @@ const rejected = await fetch(base + '/graphql', {
 });
 const rejectedBody = await rejected.json();
 assert.ok(rejectedBody.errors?.some((error) => error.message.includes('field or depth budget')));
+
+// Hotspots REST contract (/api/v1 and /api prefix rewrite)
+const hotspotsV1 = await get('/api/v1/hotspots');
+assert.equal(hotspotsV1.status, 200);
+assert.ok(Array.isArray(hotspotsV1.body));
+assert.ok(hotspotsV1.body.length > 0);
+assert.ok(hotspotsV1.body[0].clusterId);
+assert.ok(hotspotsV1.body[0].triageHypothesis);
+
+const hotspotsAlias = await get('/api/hotspots');
+assert.equal(hotspotsAlias.status, 200);
+assert.equal(hotspotsAlias.body.length, hotspotsV1.body.length);
+
+// Dispatch alert endpoint
+const firstClusterId = hotspotsV1.body[0].clusterId;
+const dispatchRes = await fetch(base + `/api/v1/hotspots/${firstClusterId}/dispatch-alert`, { method: 'POST' });
+assert.ok([200, 201].includes(dispatchRes.status));
+const dispatchBody = await dispatchRes.json();
+assert.equal(dispatchBody.clusterId, firstClusterId);
+assert.ok(['delivered', 'simulated'].includes(dispatchBody.status));
+
+// Model Governance REST endpoint
+const gov = await get('/api/v1/models/governance');
+assert.equal(gov.status, 200);
+assert.equal(gov.body.modelV1.status, 'WITHHELD_AT_GATE');
+assert.equal(gov.body.modelV2.status, 'ACTIVE_PRODUCTION');
+
+// GraphQL hotspots & governance contract
+const gqlHotspots = await fetch(base + '/graphql', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({
+    query: 'query { hotspots { clusterId complaintType severityTier } modelGovernance { modelV1 { status } modelV2 { status } } }',
+  }),
+});
+const gqlHotspotsBody = await gqlHotspots.json();
+assert.ok(gqlHotspotsBody.data.hotspots.length > 0);
+assert.equal(gqlHotspotsBody.data.modelGovernance.modelV1.status, 'WITHHELD_AT_GATE');
+assert.equal(gqlHotspotsBody.data.modelGovernance.modelV2.status, 'ACTIVE_PRODUCTION');
+
 console.log('CityOps API contract checks passed');
